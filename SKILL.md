@@ -1,12 +1,13 @@
 ---
 name: usyd-course-backup
-description: Back up a University of Sydney student's own coursework from Canvas (canvas.sydney.edu.au), Ed (edstem.org) and Gradescope before their student account closes — submitted assignments, grades, teacher feedback and rubrics, assignment specs, course materials and lecture slides, hidden Canvas pages, Ed lessons/quizzes/submission history, Ed git assignment code (e.g. COMP2017 PEX), and Gradescope graded copies — into one tidy term/course folder tree. Use this whenever a USYD student wants to download, save, export, archive or keep their Canvas/Ed/Gradescope stuff, mentions graduating or losing access to their uni account, asks to "back up my courses", "download all my assignments/lecture notes", "save my feedback/grades", or has a Canvas or Ed API token and wants to use it — even if they only name one of the three platforms.
+description: Back up a University of Sydney student's own coursework and university email before their student account closes — Canvas (canvas.sydney.edu.au), Ed (edstem.org) and Gradescope (submitted assignments, grades, teacher feedback and rubrics, assignment specs, course materials and lecture slides, hidden Canvas pages, Ed lessons/quizzes/submission history, Ed git assignment code such as COMP2017 PEX, Gradescope graded copies) into one tidy term/course folder tree, plus the @uni.sydney.edu.au Microsoft 365 mailbox (every email with attachments as .msg, calendars as .ics, and a PST file) through the Outlook desktop app. Use this whenever a USYD student wants to download, save, export, archive or keep their Canvas/Ed/Gradescope stuff or their uni emails, mentions graduating or losing access to their uni account, asks to "back up my courses", "download all my assignments/lecture notes", "save my feedback/grades", "export my uni email / make a PST", says Outlook's Import/Export is greyed out, or has a Canvas or Ed API token and wants to use it — even if they only name one of these.
 ---
 
-# USYD course backup (Canvas + Ed + Gradescope)
+# USYD course backup (Canvas + Ed + Gradescope + university email)
 
-Student accounts — and with them Canvas, Ed, Gradescope and the university OneDrive — stop working after
-graduation. This skill exports everything the student can see into a folder tree they keep:
+Student accounts — and with them Canvas, Ed, Gradescope, the university mailbox and OneDrive — stop working after
+graduation. This skill exports the student's coursework into a folder tree they keep, and their university
+email into a separate archive (Step 4):
 
 ```
 <backup>/                                  e.g. F:\USYD-Projects\Canvas-Backup
@@ -112,7 +113,40 @@ py -I scripts/gradescope_import.py --export "<Downloads>/Gradescope backup.zip" 
 Use the time just before the browser work started for `--since`, so older downloads are ignored. Look at the
 unmatched list together with the student before deleting anything that isn't clearly a duplicate.
 
-## Step 4 — Wrap up
+## Step 4 — University email (Microsoft 365 via Outlook)
+
+The @uni.sydney.edu.au mailbox closes with the account. Outlook on the web can't export, and in the classic
+Outlook desktop app File → Open & Export → **Import/Export is often greyed out** for student accounts — so the
+scripts drive the Outlook desktop app through its object model instead (read-only towards the mailbox). They need
+the **classic Outlook for Windows** app with the university account signed in (the "new Outlook" app has no
+object model; if that's all they have, help them install/open classic Outlook from Microsoft 365 first).
+Keep the archive outside the university OneDrive, e.g. `<drive>:\USYD-Archive\Email`.
+
+```
+powershell -ExecutionPolicy Bypass -File scripts/email_export_msg.ps1 -Out <archive>\Email -CheckOnly   # mailbox found? oldest email?
+powershell -ExecutionPolicy Bypass -File scripts/email_export_msg.ps1 -Out <archive>\Email             # background; ~40 min per 9,000 items
+powershell -ExecutionPolicy Bypass -File scripts/email_export_pst.ps1 -Pst <archive>\Email\uni-mailbox.pst
+```
+
+1. **Make sure everything is synced first.** Outlook's cached mode often keeps only the last 12 months, and the
+   export only sees what's local. `-CheckOnly` prints the oldest inbox date; if it's recent, have the student set
+   File → Account Settings → (the account) → *Download email for the past: **All***, restart Outlook and wait for
+   "All folders are up to date". Compare the oldest date with when they started at USYD.
+2. **`.msg` export** — every email (attachments included), calendar item, contact and note as its own Unicode
+   `.msg` in the mailbox's folder tree, each calendar also as `.ics` (importable into Google/Apple Calendar), and
+   `index.csv` (date, from, to, subject, attachment count, file) that opens in Excel. Folder names stay in the
+   mailbox's display language (e.g. Chinese folder names for a Chinese-language Outlook); that's fine. Subscribed calendars such as public
+   holidays can't be exported as `.ics` — harmless, their items are still saved as `.msg`.
+3. **PST** — one Outlook data file with everything, which opens in any Outlook and can be imported into a new
+   mailbox. The script creates the PST, copies (never moves) each top-level folder into it, compares item
+   counts per folder (`uni-mailbox.verify.txt`) and detaches it again. If Outlook refuses to create a PST, it's
+   blocked by policy — the `.msg` export is then the backup.
+
+Run one script at a time (both use the same Outlook session); Outlook must stay open and the computer awake. If
+Outlook asks whether to allow a program to access it, the student should click **Allow**. If a `.msg` run is
+interrupted, delete the few newest `.msg` files and re-run — existing files are skipped.
+
+## Step 5 — Wrap up
 
 Give the student a short summary table: per platform what was saved (counts, GB), what was deliberately
 skipped, and anything still missing with the reason. Then remind them to:
@@ -120,6 +154,12 @@ skipped, and anything still missing with the reason. Then remind them to:
 1. revoke the Canvas token (Account → Settings → Approved Integrations) and the Ed token (Settings → API Tokens),
    and delete `.env` (offer to delete it — but only once they confirm they're finished);
 2. optionally remove the Ed SSH key;
-3. copy the backup folder to a second place they control (external drive or personal cloud — not uni OneDrive);
+3. copy the backup folders (coursework and email) to a second place they control (external drive or personal
+   cloud — not uni OneDrive);
 4. keep course materials private (copyright), and be careful before publishing any assignment code
-   (academic integrity — courses reuse assignments).
+   (academic integrity — courses reuse assignments);
+5. other things that disappear with the account and aren't covered here: files in the university OneDrive
+   (make them "Always keep on this device" and copy them out), Teams chats/files, OneNote notebooks, Zoom cloud
+   recordings, Overleaf projects under the uni login, and transcripts (Sydney Student; official copies via My
+   eQuals). Also move any accounts registered with the uni email (GitHub, JetBrains, LinkedIn, Kaggle, …) to a
+   personal address so password resets keep working.

@@ -1,7 +1,8 @@
 # usyd-course-backup
 
 A [Claude Code](https://claude.com/claude-code) skill that backs up a University of Sydney student's own
-coursework from **Canvas**, **Ed** and **Gradescope** before their student account closes.
+coursework from **Canvas**, **Ed** and **Gradescope**, and their **university email**, before their student
+account closes.
 
 It produces one folder tree, organised by term and course:
 
@@ -24,6 +25,7 @@ Canvas-Backup/
 | Canvas | submissions (all attempts), scores, rubrics, comments, feedback files, assignment specs, module files, pages with embedded files, hidden linked pages, Home/Syllabus, Files area, personal files | — |
 | Ed | lessons (slides → HTML, PDFs, images), quizzes with my answers, submission records for every challenge, full git history of git-submitted assignments | course resources, code of non-git challenges |
 | Gradescope | — | graded PDFs and original submissions (export), filed into each course |
+| University email (@uni.sydney.edu.au) | every email with attachments as `.msg` + `index.csv`, calendars as `.ics`, and a verified PST — via the Outlook desktop app, even when Import/Export is greyed out | — |
 
 The browser parts produce English task lists that can be handed to Claude in Chrome (or done by hand); a script
 then files the downloads into the right course folders.
@@ -54,6 +56,11 @@ python scripts/ed_git_clone.py    --out Canvas-Backup              # SSH key add
 python scripts/ed_browser_tasks.py --env .env --out Canvas-Backup  # writes _ed-browser-tasks.md
 python scripts/sort_downloads.py  --downloads ~/Downloads --out Canvas-Backup --since "YYYY-MM-DD HH:MM" --move
 python scripts/gradescope_import.py --export "Gradescope backup.zip" --out Canvas-Backup --apply
+
+# University email (classic Outlook for Windows, signed in to the uni account; keep Outlook open)
+powershell -ExecutionPolicy Bypass -File scripts/email_export_msg.ps1 -Out D:\USYD-Archive\Email -CheckOnly
+powershell -ExecutionPolicy Bypass -File scripts/email_export_msg.ps1 -Out D:\USYD-Archive\Email
+powershell -ExecutionPolicy Bypass -File scripts/email_export_pst.ps1 -Pst D:\USYD-Archive\Email\uni-mailbox.pst
 ```
 
 All scripts are read-only towards Canvas/Ed, never print tokens, send each token only to its own platform, and

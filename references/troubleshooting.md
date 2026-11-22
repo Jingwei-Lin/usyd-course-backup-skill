@@ -42,5 +42,23 @@ After the run, list the largest files (`find <backup> -size +500M`) and ask whet
 **Faculty portals** (Engineering/CS Student Portal, exam notification sites) are included by Canvas but are
 rarely worth keeping; they end up under `Other/` and `<year>-Other/`. Offer to delete them.
 
+**Outlook: Import/Export is greyed out.** Common for student Microsoft 365 accounts (licence state or tenant
+settings). Check `HKCU\Software\Policies\Microsoft\Office\16.0\Outlook` for `DisablePST`; if absent, the object
+model route still works — use `email_export_msg.ps1` / `email_export_pst.ps1`. Also check the student used File in
+the main window, not inside an open message.
+
+**Outlook: the export only has the last year of email.** Cached Exchange mode syncs a limited window. Set
+"Download email for the past" to All and wait for the sync before exporting (the msg script's `-CheckOnly`
+shows the oldest inbox date).
+
+**Outlook: "A program is trying to access e-mail address information…"** That's Outlook's object-model guard;
+the student clicks Allow (it may ask again after 10 minutes on machines without up-to-date antivirus).
+
+**Outlook: `.ics` export fails with "You don't have appropriate permission".** That calendar is a subscription
+(e.g. public holidays). Ignore it.
+
+**Outlook: a test PST stays locked after `RemoveStore`.** Outlook holds the file until it's restarted; delete
+leftovers after closing Outlook.
+
 **The token got printed / pasted into chat.** Revoke it immediately and create a new one. The scripts never
 print tokens; when inspecting `.env`, show only key names and lengths.
